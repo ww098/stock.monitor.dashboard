@@ -1,0 +1,11 @@
+{
+  "updated_by": "scripts/update_market_data.py",
+  "groups": [
+    {"name": "半導體", "stocks": [{"code": "2330", "name": "台積電"}, {"code": "2454", "name": "聯發科"}, {"code": "2303", "name": "聯電"}, {"code": "6488", "name": "環球晶"}]},
+    {"name": "金融", "stocks": [{"code": "2882", "name": "國泰金"}, {"code": "2881", "name": "富邦金"}, {"code": "2891", "name": "中信金"}, {"code": "2887", "name": "台新新光金"}]},
+    {"name": "科技組裝", "stocks": [{"code": "2317", "name": "鴻海"}, {"code": "2382", "name": "廣達"}, {"code": "2324", "name": "仁寶"}]},
+    {"name": "傳產消費", "stocks": [{"code": "1301", "name": "台塑"}, {"code": "1216", "name": "統一"}, {"code": "2412", "name": "中華電"}]},
+    {"name": "被動元件", "stocks": [{"code": "2327", "name": "國巨*"}, {"code": "3026", "name": "禾伸堂"}]}
+  ],
+  "benchmarks": [{"code": "0050", "name": "元大台灣50"}, {"code": "00878", "name": "國泰永續高股息"}, {"code": "00981A", "name": "主動統一台股增長"}]
+}

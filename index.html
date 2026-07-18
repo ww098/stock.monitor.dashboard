@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>台股產業趨勢儀表板</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div>
+      <p class="eyebrow">TWSE WATCHLIST</p>
+      <h1>台股產業趨勢儀表板</h1>
+      <p id="as-of">載入市場資料中…</p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <button id="toggle-panel" type="button" style="background: var(--surface); border: 1px solid var(--line); color: var(--text);">管理名單</button>
+      <button id="reload" type="button">重新載入</button>
+    </div>
+  </header>
+  
+  <main>
+    <!-- 新增：本週市場焦點區塊 -->
+    <section class="panel">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">MARKET HIGHLIGHTS</p>
+          <h2>本週市場焦點（強勢股）</h2>
+        </div>
+      </div>
+      <div id="hot-stocks" class="summary-grid"></div>
+    </section>
+
+    <!-- 股票觀察名單管理面板 -->
+    <section id="management-panel" class="panel" style="display: none; margin-bottom: 20px;">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">WATCHLIST MANAGER</p>
+          <h2>管理觀察名單</h2>
+        </div>
+      </div>
+      <form id="add-stock-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) auto; gap: 15px; align-items: end; margin-top: 15px;">
+        <div>
+          <label style="display:block; font-size:12px; color:var(--muted); margin-bottom:5px;">板塊名稱</label>
+          <input type="text" id="input-group" placeholder="例如：半導體" required style="width:100%; padding:10px; background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:6px;">
+        </div>
+        <div>
+          <label style="display:block; font-size:12px; color:var(--muted); margin-bottom:5px;">代碼</label>
+          <input type="text" id="input-code" placeholder="2330" required style="width:100%; padding:10px; background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:6px;">
+        </div>
+        <div>
+          <label style="display:block; font-size:12px; color:var(--muted); margin-bottom:5px;">名稱</label>
+          <input type="text" id="input-name" placeholder="台積電" required style="width:100%; padding:10px; background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:6px;">
+        </div>
+        <button type="submit" style="padding: 10px 20px; height: 40px;">加入</button>
+      </form>
+      <div id="msg" style="margin-top: 10px; font-size: 14px;"></div>
+    </section>
+
+    <section class="summary-grid" aria-label="本週摘要">
+      <article><span>本週最強</span><strong id="strongest">—</strong></article>
+      <article><span>本週最弱</span><strong id="weakest">—</strong></article>
+      <article><span>監測板塊</span><strong id="coverage">—</strong></article>
+    </section>
+    
+    <section class="panel">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">WEEKLY RANKING</p>
+          <h2>板塊本週表現</h2>
+        </div>
+        <p>點選列查看成分股</p>
+      </div>
+      <div id="ranking" class="ranking" role="list"></div>
+    </section>
+    
+    <section class="detail-grid">
+      <article class="panel">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">SELECTED SECTOR</p>
+            <h2 id="selected-title">—</h2>
+          </div>
+          <strong id="selected-return">—</strong>
+        </div>
+        <div id="trend" class="trend" aria-label="本週累積報酬率趨勢"></div>
+      </article>
+      <article class="panel">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">HOLDINGS</p>
+            <h2>成分股</h2>
+          </div>
+          <p id="selected-day">—</p>
+        </div>
+        <div id="holdings" class="holdings"></div>
+      </article>
+    </section>
+  </main>
+  <footer>資料來源：臺灣證券交易所。僅供參考，不構成投資建議。</footer>
+  <script src="app.js"></script>
+</body>
+</html>
