@@ -6,23 +6,23 @@
         {
           "code": "2330",
           "name": "台積電",
-          "open": 31605663.0,
-          "close": 2410.0,
-          "week_return": -1.23
+          "open": 31653123.0,
+          "close": 2400.0,
+          "week_return": -2.83
         },
         {
           "code": "2454",
           "name": "聯發科",
-          "open": 7741511.0,
-          "close": 3670.0,
-          "week_return": -1.87
+          "open": 13766807.0,
+          "close": 3850.0,
+          "week_return": 4.05
         },
         {
           "code": "2303",
           "name": "聯電",
-          "open": 259729470.0,
-          "close": 134.5,
-          "week_return": -18.98
+          "open": 176785970.0,
+          "close": 139.0,
+          "week_return": -13.12
         }
       ]
     },
@@ -32,30 +32,30 @@
         {
           "code": "2882",
           "name": "國泰金",
-          "open": 21831261.0,
-          "close": 95.8,
-          "week_return": -0.83
+          "open": 24444875.0,
+          "close": 96.8,
+          "week_return": -0.51
         },
         {
           "code": "2881",
           "name": "富邦金",
-          "open": 17394297.0,
-          "close": 123.5,
-          "week_return": -3.89
+          "open": 28000052.0,
+          "close": 127.0,
+          "week_return": 1.6
         },
         {
           "code": "2891",
           "name": "中信金",
-          "open": 50351669.0,
-          "close": 62.7,
-          "week_return": -1.26
+          "open": 35795208.0,
+          "close": 64.0,
+          "week_return": 1.59
         },
         {
           "code": "2887",
           "name": "台新新光金",
-          "open": 82021283.0,
-          "close": 34.7,
-          "week_return": -4.01
+          "open": 54218588.0,
+          "close": 34.6,
+          "week_return": -4.29
         }
       ]
     },
@@ -65,23 +65,23 @@
         {
           "code": "2317",
           "name": "鴻海",
-          "open": 51471036.0,
-          "close": 246.0,
-          "week_return": 2.93
+          "open": 67787081.0,
+          "close": 251.5,
+          "week_return": 3.71
         },
         {
           "code": "2382",
           "name": "廣達",
-          "open": 22568430.0,
-          "close": 324.0,
-          "week_return": -14.96
+          "open": 23698660.0,
+          "close": 329.0,
+          "week_return": -6.53
         },
         {
           "code": "2324",
           "name": "仁寶",
-          "open": 31499837.0,
-          "close": 36.0,
-          "week_return": -0.41
+          "open": 46804122.0,
+          "close": 36.2,
+          "week_return": 0.7
         }
       ]
     },
@@ -91,23 +91,23 @@
         {
           "code": "1301",
           "name": "台塑",
-          "open": 60422391.0,
-          "close": 63.0,
-          "week_return": -4.11
+          "open": 61438338.0,
+          "close": 63.5,
+          "week_return": -3.2
         },
         {
           "code": "1216",
           "name": "統一",
-          "open": 22149684.0,
-          "close": 79.6,
-          "week_return": 1.27
+          "open": 28491284.0,
+          "close": 76.8,
+          "week_return": -2.78
         },
         {
           "code": "2412",
           "name": "中華電",
-          "open": 18419601.0,
-          "close": 139.0,
-          "week_return": 4.51
+          "open": 13465261.0,
+          "close": 138.5,
+          "week_return": 1.84
         }
       ]
     },
@@ -117,19 +117,19 @@
         {
           "code": "2327",
           "name": "國巨*",
-          "open": 96163970.0,
-          "close": 670.0,
-          "week_return": -16.04
+          "open": 75283059.0,
+          "close": 703.0,
+          "week_return": -9.41
         },
         {
           "code": "3026",
           "name": "禾伸堂",
-          "open": 20336712.0,
-          "close": 682.0,
-          "week_return": -18.62
+          "open": 2351754.0,
+          "close": 663.0,
+          "week_return": -13.45
         }
       ]
     }
   ],
-  "generated_at": "2026-07-21T10:04:18.218885"
+  "generated_at": "2026-07-22T10:01:06.294869"
 }
