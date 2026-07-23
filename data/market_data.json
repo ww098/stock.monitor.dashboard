@@ -6,23 +6,23 @@
         {
           "code": "2330",
           "name": "台積電",
-          "open": 31653123.0,
-          "close": 2400.0,
-          "week_return": -2.83
+          "open": 28001492.0,
+          "close": 2405.0,
+          "week_return": 5.02
         },
         {
           "code": "2454",
           "name": "聯發科",
-          "open": 13766807.0,
-          "close": 3850.0,
-          "week_return": 4.05
+          "open": 8514494.0,
+          "close": 3875.0,
+          "week_return": 14.99
         },
         {
           "code": "2303",
           "name": "聯電",
-          "open": 176785970.0,
-          "close": 139.0,
-          "week_return": -13.12
+          "open": 115296489.0,
+          "close": 138.5,
+          "week_return": -3.82
         }
       ]
     },
@@ -32,30 +32,30 @@
         {
           "code": "2882",
           "name": "國泰金",
-          "open": 24444875.0,
-          "close": 96.8,
-          "week_return": -0.51
+          "open": 15934678.0,
+          "close": 97.3,
+          "week_return": 3.18
         },
         {
           "code": "2881",
           "name": "富邦金",
-          "open": 28000052.0,
-          "close": 127.0,
-          "week_return": 1.6
+          "open": 16221406.0,
+          "close": 128.5,
+          "week_return": 3.21
         },
         {
           "code": "2891",
           "name": "中信金",
-          "open": 35795208.0,
-          "close": 64.0,
-          "week_return": 1.59
+          "open": 35051644.0,
+          "close": 63.5,
+          "week_return": 2.25
         },
         {
           "code": "2887",
           "name": "台新新光金",
-          "open": 54218588.0,
-          "close": 34.6,
-          "week_return": -4.29
+          "open": 53495915.0,
+          "close": 34.5,
+          "week_return": -2.95
         }
       ]
     },
@@ -65,23 +65,23 @@
         {
           "code": "2317",
           "name": "鴻海",
-          "open": 67787081.0,
-          "close": 251.5,
-          "week_return": 3.71
+          "open": 63787974.0,
+          "close": 257.5,
+          "week_return": 10.04
         },
         {
           "code": "2382",
           "name": "廣達",
-          "open": 23698660.0,
-          "close": 329.0,
-          "week_return": -6.53
+          "open": 24000085.0,
+          "close": 336.0,
+          "week_return": 3.23
         },
         {
           "code": "2324",
           "name": "仁寶",
-          "open": 46804122.0,
-          "close": 36.2,
-          "week_return": 0.7
+          "open": 57790237.0,
+          "close": 36.75,
+          "week_return": 2.08
         }
       ]
     },
@@ -91,23 +91,23 @@
         {
           "code": "1301",
           "name": "台塑",
-          "open": 61438338.0,
-          "close": 63.5,
-          "week_return": -3.2
+          "open": 163615466.0,
+          "close": 66.2,
+          "week_return": 5.41
         },
         {
           "code": "1216",
           "name": "統一",
-          "open": 28491284.0,
-          "close": 76.8,
-          "week_return": -2.78
+          "open": 20523566.0,
+          "close": 77.0,
+          "week_return": -3.75
         },
         {
           "code": "2412",
           "name": "中華電",
-          "open": 13465261.0,
-          "close": 138.5,
-          "week_return": 1.84
+          "open": 10882713.0,
+          "close": 138.0,
+          "week_return": 0.0
         }
       ]
     },
@@ -117,19 +117,19 @@
         {
           "code": "2327",
           "name": "國巨*",
-          "open": 75283059.0,
-          "close": 703.0,
-          "week_return": -9.41
+          "open": 59707395.0,
+          "close": 696.0,
+          "week_return": -0.43
         },
         {
           "code": "3026",
           "name": "禾伸堂",
-          "open": 2351754.0,
-          "close": 663.0,
-          "week_return": -13.45
+          "open": 1319749.0,
+          "close": 697.0,
+          "week_return": 1.01
         }
       ]
     }
   ],
-  "generated_at": "2026-07-22T10:01:06.294869"
+  "generated_at": "2026-07-23T10:01:08.191783"
 }
