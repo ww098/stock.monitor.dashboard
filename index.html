@@ -3,24 +3,32 @@
 <head>
   <meta charset="utf-8">
   <title>台股儀表板</title>
+  <!-- 這裡正確載入你精美的外部 CSS -->
   <link rel="stylesheet" href="./style.css">
-  <style>
-    body { font-family: sans-serif; padding: 20px; }
-    .panel { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; }
-    .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-    .ranking-row { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; }
-  </style>
 </head>
 <body>
-  <h1>台股產業趨勢儀表板</h1>
-  <section class="panel">
-    <h2>本週市場焦點</h2>
-    <div id="hot-stocks" class="summary-grid"></div>
-  </section>
-  <section class="panel">
-    <h2>板塊表現</h2>
-    <div id="ranking"></div>
-  </section>
+  
+  <header class="site-header">
+    <h1>台股產業趨勢儀表板</h1>
+  </header>
+
+  <main>
+    <section class="panel">
+      <div class="section-heading">
+        <h2>本週市場焦點</h2>
+      </div>
+      <div id="hot-stocks" class="summary-grid"></div>
+    </section>
+
+    <section class="panel">
+      <div class="section-heading">
+        <h2>板塊表現</h2>
+      </div>
+      <!-- 這裡的外層加上 ranking class，對應你的 CSS -->
+      <div id="ranking" class="ranking"></div>
+    </section>
+  </main>
+
   <script src="app.js"></script>
 </body>
 </html>
