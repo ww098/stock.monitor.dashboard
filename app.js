@@ -14,7 +14,7 @@ function renderRanking(data) {
     container.innerHTML = '';
     data.groups.forEach(group => {
         const div = document.createElement('div');
-        div.className = 'ranking-row';
+        div.className = 'rank-row';
         div.innerHTML = `<span>${group.name}</span><button onclick="viewGroup('${group.name}')">查看</button>`;
         container.appendChild(div);
     });
