@@ -6,23 +6,23 @@
         {
           "code": "2330",
           "name": "台積電",
-          "open": 51372177.0,
-          "close": 2205.0,
-          "week_return": -6.17
+          "open": 69478145.0,
+          "close": 2425.0,
+          "week_return": 3.19
         },
         {
           "code": "2454",
           "name": "聯發科",
-          "open": 14125689.0,
-          "close": 3235.0,
-          "week_return": -13.73
+          "open": 4033014.0,
+          "close": 3555.0,
+          "week_return": -3.4
         },
         {
           "code": "2303",
           "name": "聯電",
-          "open": 376328814.0,
-          "close": 110.0,
-          "week_return": -14.06
+          "open": 45464057.0,
+          "close": 121.0,
+          "week_return": -3.97
         }
       ]
     },
@@ -32,30 +32,30 @@
         {
           "code": "2882",
           "name": "國泰金",
-          "open": 27925831.0,
-          "close": 95.2,
-          "week_return": -1.86
+          "open": 41391430.0,
+          "close": 101.5,
+          "week_return": 3.05
         },
         {
           "code": "2881",
           "name": "富邦金",
-          "open": 22959532.0,
-          "close": 124.0,
-          "week_return": -2.75
+          "open": 32956894.0,
+          "close": 130.0,
+          "week_return": 0.0
         },
         {
           "code": "2891",
           "name": "中信金",
-          "open": 43842809.0,
-          "close": 63.1,
-          "week_return": -0.79
+          "open": 48156570.0,
+          "close": 64.9,
+          "week_return": 3.02
         },
         {
           "code": "2887",
           "name": "台新新光金",
-          "open": 60169914.0,
-          "close": 33.15,
-          "week_return": -2.93
+          "open": 96324582.0,
+          "close": 35.95,
+          "week_return": 2.86
         }
       ]
     },
@@ -65,23 +65,23 @@
         {
           "code": "2317",
           "name": "鴻海",
-          "open": 77132664.0,
-          "close": 229.5,
-          "week_return": -9.11
+          "open": 99413798.0,
+          "close": 250.5,
+          "week_return": -0.99
         },
         {
           "code": "2382",
           "name": "廣達",
-          "open": 60476779.0,
-          "close": 279.0,
-          "week_return": -14.94
+          "open": 49270092.0,
+          "close": 291.5,
+          "week_return": -9.47
         },
         {
           "code": "2324",
           "name": "仁寶",
-          "open": 62497775.0,
-          "close": 33.75,
-          "week_return": -9.27
+          "open": 76506343.0,
+          "close": 36.0,
+          "week_return": -3.1
         }
       ]
     },
@@ -91,23 +91,23 @@
         {
           "code": "1301",
           "name": "台塑",
-          "open": 38478943.0,
-          "close": 54.0,
-          "week_return": -13.88
+          "open": 49098193.0,
+          "close": 55.0,
+          "week_return": -10.86
         },
         {
           "code": "1216",
           "name": "統一",
-          "open": 37472807.0,
-          "close": 75.6,
-          "week_return": -2.33
+          "open": 33716217.0,
+          "close": 73.8,
+          "week_return": -4.28
         },
         {
           "code": "2412",
           "name": "中華電",
-          "open": 18568927.0,
-          "close": 140.5,
-          "week_return": 1.08
+          "open": 23664742.0,
+          "close": 139.5,
+          "week_return": -0.71
         }
       ]
     },
@@ -117,19 +117,19 @@
         {
           "code": "2327",
           "name": "國巨*",
-          "open": 106828585.0,
-          "close": 456.5,
-          "week_return": -28.89
+          "open": 6398641.0,
+          "close": 502.0,
+          "week_return": -19.68
         },
         {
           "code": "3026",
           "name": "禾伸堂",
-          "open": 3974280.0,
-          "close": 427.5,
-          "week_return": -33.2
+          "open": 6002702.0,
+          "close": 450.0,
+          "week_return": -23.08
         }
       ]
     }
   ],
-  "generated_at": "2026-07-30T10:00:03.448132"
+  "generated_at": "2026-07-31T10:07:25.778050"
 }
