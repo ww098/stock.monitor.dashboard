@@ -5,25 +5,20 @@ from __future__ import annotations
 import json
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
-from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
 
 # ============================================================
-# 路徑
+# 基本設定
 # ============================================================
 
 ROOT = Path(__file__).resolve().parents[1]
 
 WATCHLIST = ROOT / "data" / "watchlist.json"
 OUTPUT = ROOT / "data" / "market_data.json"
-
-
-# ============================================================
-# API
-# ============================================================
 
 TWSE_API = (
     "https://www.twse.com.tw/exchangeReport/"
@@ -37,33 +32,46 @@ TPEX_API = (
 
 
 # ============================================================
-# 基本工具
+# 工具函式
 # ============================================================
 
 def clean_number(value):
     """
-    把:
-        1,234.50
-        1234.50
-        -
-    轉成 float
+    把 API 回傳的數字字串轉成 float。
+
+    例如：
+    "2,395.00" -> 2395.0
+    "—"        -> None
+    "--"       -> None
+    ""
+             -> None
     """
+
     if value is None:
         return None
 
-    value = str(value).strip()
+    text = str(value).strip()
 
-    if value in ("", "-", "--"):
+    if text in {"", "-", "--", "—", "N/A", "null"}:
         return None
 
+    text = text.replace(",", "")
+
     try:
-        return float(value.replace(",", ""))
+        return float(text)
     except ValueError:
         return None
 
 
 def pct(start, end):
-    if start in (None, 0) or end is None:
+    """
+    計算報酬率。
+    """
+
+    if start is None or end is None:
+        return None
+
+    if start == 0:
         return None
 
     return round((end / start - 1) * 100, 2)
@@ -71,173 +79,271 @@ def pct(start, end):
 
 def http_json(url, retries=3):
     """
-    HTTP JSON 請求，失敗自動重試
+    取得 JSON。
+
+    API 偶爾會 timeout / 403 / 暫時性錯誤，
+    所以最多重試 3 次。
     """
+
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/537.36 "
+            "(KHTML, like Gecko) "
+            "Chrome/146.0.0.0 Safari/537.36"
+        ),
+        "Accept": "application/json,text/plain,*/*",
+    }
 
     last_error = None
 
     for attempt in range(1, retries + 1):
 
         try:
-            req = Request(
-                url,
-                headers={
-                    "User-Agent": "Mozilla/5.0",
-                    "Accept": "application/json,text/plain,*/*",
-                },
-            )
+            req = Request(url, headers=headers)
 
-            with urlopen(req, timeout=20) as res:
-                return json.load(res)
+            with urlopen(req, timeout=30) as response:
+                return json.load(response)
 
-        except (HTTPError, URLError, TimeoutError, Exception) as e:
-
-            last_error = e
+        except Exception as exc:
+            last_error = exc
 
             print(
-                f"    ⚠️ API失敗 "
-                f"(第 {attempt}/{retries} 次): {e}"
+                f"API request failed "
+                f"(attempt {attempt}/{retries}): {url}"
             )
+            print(f"Error: {exc}")
 
             if attempt < retries:
-                time.sleep(1.5 * attempt)
+                time.sleep(2 * attempt)
 
-    raise RuntimeError(str(last_error))
-
-
-# ============================================================
-# TWSE 上市
-# ============================================================
-
-def fetch_twse_history(code: str) -> list[dict]:
-
-    date = datetime.now().strftime("%Y%m01")
-
-    url = TWSE_API.format(
-        date=date,
-        code=code
+    raise RuntimeError(
+        f"API request failed after {retries} attempts: "
+        f"{last_error}"
     )
 
-    payload = http_json(url)
 
-    if payload.get("stat") != "OK":
-        raise RuntimeError(
-            f"TWSE 無法取得 {code}"
+# ============================================================
+# 日期
+# ============================================================
+
+def month_candidates():
+    """
+    取得目前月份以及前一個月份。
+
+    例如現在是 2026/08：
+    20260801
+    20260701
+
+    這樣如果剛好在月底 / 月初或遇到 API 問題，
+    可以往前找資料。
+    """
+
+    now = datetime.now()
+
+    current = now.replace(day=1)
+
+    if current.month == 1:
+        previous = current.replace(
+            year=current.year - 1,
+            month=12
+        )
+    else:
+        previous = current.replace(
+            month=current.month - 1
         )
 
-    rows = []
+    return [
+        current.strftime("%Y%m01"),
+        previous.strftime("%Y%m01"),
+    ]
 
-    for row in payload.get("data", []):
 
-        if len(row) < 7:
-            continue
+def tpex_month_candidates():
+    """
+    TPEx 使用 YYYY/MM/01 格式。
+    """
+
+    now = datetime.now()
+
+    current = now.replace(day=1)
+
+    if current.month == 1:
+        previous = current.replace(
+            year=current.year - 1,
+            month=12
+        )
+    else:
+        previous = current.replace(
+            month=current.month - 1
+        )
+
+    return [
+        current.strftime("%Y/%m/01"),
+        previous.strftime("%Y/%m/01"),
+    ]
+
+
+# ============================================================
+# TWSE
+# ============================================================
+
+def fetch_twse_history(code):
+    """
+    抓取 TWSE 上市股票歷史資料。
+    """
+
+    errors = []
+
+    for date in month_candidates():
+
+        url = TWSE_API.format(
+            date=date,
+            code=code
+        )
 
         try:
+            payload = http_json(url)
 
-            open_price = clean_number(row[3])
-            close_price = clean_number(row[6])
-
-            if open_price is None or close_price is None:
+            if payload.get("stat") != "OK":
+                errors.append(
+                    f"TWSE {date}: stat={payload.get('stat')}"
+                )
                 continue
 
-            rows.append({
-                "date": row[0],
-                "open": open_price,
-                "close": close_price
-            })
+            rows = []
 
-        except Exception:
-            continue
+            for row in payload.get("data", []):
 
-    if not rows:
-        raise RuntimeError(
-            f"TWSE {code} 沒有有效交易資料"
-        )
+                if len(row) < 7:
+                    continue
 
-    return rows
+                open_price = clean_number(row[3])
+                close_price = clean_number(row[6])
 
+                if open_price is None or close_price is None:
+                    continue
 
-# ============================================================
-# TPEx 上櫃
-# ============================================================
+                rows.append({
+                    "date": row[0],
+                    "open": open_price,
+                    "close": close_price,
+                })
 
-def fetch_tpex_history(code: str) -> list[dict]:
+            if rows:
+                return rows
 
-    date = datetime.now().strftime("%Y/%m/01")
+            errors.append(
+                f"TWSE {date}: no valid rows"
+            )
 
-    url = TPEX_API.format(
-        date=date,
-        code=code
+        except Exception as exc:
+            errors.append(
+                f"TWSE {date}: {exc}"
+            )
+
+    raise RuntimeError(
+        f"TWSE failed for {code}: "
+        + " | ".join(errors)
     )
 
-    payload = http_json(url)
 
-    if str(payload.get("stat", "")).lower() not in ("ok", "success"):
-        raise RuntimeError(
-            f"TPEx 無法取得 {code}"
+# ============================================================
+# TPEx
+# ============================================================
+
+def fetch_tpex_history(code):
+    """
+    抓取 TPEx / OTC 上櫃股票歷史資料。
+    """
+
+    errors = []
+
+    for date in tpex_month_candidates():
+
+        url = TPEX_API.format(
+            date=date,
+            code=code
         )
-
-    tables = payload.get("tables", [])
-
-    if not tables:
-        raise RuntimeError(
-            f"TPEx {code} 沒有資料"
-        )
-
-    rows = []
-
-    # TPEx 的資料放在 tables[0]["data"]
-    data = tables[0].get("data", [])
-
-    for row in data:
-
-        if len(row) < 7:
-            continue
 
         try:
+            payload = http_json(url)
 
-            open_price = clean_number(row[3])
-            close_price = clean_number(row[6])
-
-            if open_price is None or close_price is None:
+            if str(payload.get("stat", "")).lower() != "ok":
+                errors.append(
+                    f"TPEx {date}: stat={payload.get('stat')}"
+                )
                 continue
 
-            rows.append({
-                "date": row[0],
-                "open": open_price,
-                "close": close_price
-            })
+            tables = payload.get("tables", [])
 
-        except Exception:
-            continue
+            if not tables:
+                errors.append(
+                    f"TPEx {date}: no tables"
+                )
+                continue
 
-    if not rows:
-        raise RuntimeError(
-            f"TPEx {code} 沒有有效交易資料"
-        )
+            data_rows = tables[0].get("data", [])
 
-    return rows
+            rows = []
+
+            for row in data_rows:
+
+                if len(row) < 7:
+                    continue
+
+                # TPEx 通常格式：
+                #
+                # 日期
+                # 成交股數
+                # 成交金額
+                # 開盤
+                # 最高
+                # 最低
+                # 收盤
+                #
+
+                open_price = clean_number(row[3])
+                close_price = clean_number(row[6])
+
+                if open_price is None or close_price is None:
+                    continue
+
+                rows.append({
+                    "date": row[0],
+                    "open": open_price,
+                    "close": close_price,
+                })
+
+            if rows:
+                return rows
+
+            errors.append(
+                f"TPEx {date}: no valid rows"
+            )
+
+        except Exception as exc:
+            errors.append(
+                f"TPEx {date}: {exc}"
+            )
+
+    raise RuntimeError(
+        f"TPEx failed for {code}: "
+        + " | ".join(errors)
+    )
 
 
 # ============================================================
-# 自動判斷市場
+# 自動判斷 TWSE / TPEx
 # ============================================================
 
-def fetch_history(code: str):
-
+def fetch_history(code):
     """
     先嘗試 TWSE。
-    TWSE 找不到，再嘗試 TPEx。
-
-    這樣 watchlist.json 不需要另外寫 market。
+    如果失敗，再嘗試 TPEx。
     """
 
-    # --------------------------------------------------------
-    # 先抓上市
-    # --------------------------------------------------------
-
     try:
-
         rows = fetch_twse_history(code)
 
         return rows, "TWSE"
@@ -245,15 +351,11 @@ def fetch_history(code: str):
     except Exception as twse_error:
 
         print(
-            f"    ↪ {code} TWSE 無資料，改抓 TPEx"
+            f"[{code}] TWSE failed, trying TPEx..."
         )
-
-    # --------------------------------------------------------
-    # 再抓上櫃
-    # --------------------------------------------------------
+        print(f"TWSE error: {twse_error}")
 
     try:
-
         rows = fetch_tpex_history(code)
 
         return rows, "TPEx"
@@ -261,81 +363,67 @@ def fetch_history(code: str):
     except Exception as tpex_error:
 
         raise RuntimeError(
-            f"{code} TWSE / TPEx 都無法取得資料"
+            f"{code} unavailable on both TWSE and TPEx.\n"
+            f"TWSE: {twse_error}\n"
+            f"TPEx: {tpex_error}"
         )
 
 
 # ============================================================
-# 個股摘要
+# 個股整理
 # ============================================================
 
 def summarize(stock):
+    """
+    抓取單一股票並計算：
 
-    code = stock["code"]
-    name = stock["name"]
+    - 最新開盤
+    - 最新收盤
+    - 最近一週報酬率
+    """
 
-    try:
+    code = str(stock["code"])
 
-        rows, market = fetch_history(code)
+    rows, market = fetch_history(code)
 
-        # 最新交易日
-        latest = rows[-1]
-
-        # ----------------------------------------------------
-        # 5個交易日前
-        #
-        # 例如:
-        # rows[-6] = 5個交易日前
-        # rows[-1] = 最新一天
-        # ----------------------------------------------------
-
-        if len(rows) >= 6:
-            baseline = rows[-6]
-        else:
-            baseline = rows[0]
-
-        week_return = pct(
-            baseline["close"],
-            latest["close"]
+    if not rows:
+        raise RuntimeError(
+            f"{code}: no market data"
         )
 
-        return {
-            **stock,
+    # 最新一筆交易日
+    latest = rows[-1]
 
-            "market": market,
+    # 最近 5 個交易日報酬
+    #
+    # 如果要算「一週」：
+    # 最新日 vs 5 個交易日前
+    #
+    # 所以需要 rows[-6]
+    if len(rows) >= 6:
+        baseline = rows[-6]
+    else:
+        baseline = rows[0]
 
-            "open": latest["open"],
-            "close": latest["close"],
+    week_return = pct(
+        baseline["close"],
+        latest["close"]
+    )
 
-            "week_return": week_return,
+    return {
+        **stock,
 
-            "latest_date": latest["date"],
+        "market": market,
 
-            "status": "ok"
-        }
+        "open": latest["open"],
+        "close": latest["close"],
 
-    except Exception as e:
+        "week_return": week_return,
 
-        print(
-            f"    ❌ {code} {name}: {e}"
-        )
+        "latest_date": latest["date"],
 
-        return {
-            **stock,
-
-            "market": None,
-
-            "open": None,
-            "close": None,
-
-            "week_return": None,
-
-            "latest_date": None,
-
-            "status": "error",
-
-            "error": str(e)
-        }
+        "status": "ok",
+    }
 
 
 # ============================================================
@@ -345,100 +433,140 @@ def summarize(stock):
 def main():
 
     print("=" * 60)
-    print("📈 台股市場資料更新")
+    print("Taiwan Market Data Updater")
     print("=" * 60)
+
+    print(f"Watchlist: {WATCHLIST}")
+    print(f"Output:    {OUTPUT}")
 
     # --------------------------------------------------------
     # 讀取 watchlist
     # --------------------------------------------------------
 
     if not WATCHLIST.exists():
-
-        print(
-            f"❌ 找不到 watchlist.json:\n{WATCHLIST}"
+        raise FileNotFoundError(
+            f"Watchlist not found: {WATCHLIST}"
         )
 
-        return 1
-
-    try:
-
-        watchlist = json.loads(
-            WATCHLIST.read_text(
-                encoding="utf-8"
-            )
+    watchlist = json.loads(
+        WATCHLIST.read_text(
+            encoding="utf-8"
         )
-
-    except Exception as e:
-
-        print(
-            f"❌ watchlist.json JSON 格式錯誤: {e}"
-        )
-
-        return 1
-
-    # --------------------------------------------------------
-    # 更新所有分類
-    # --------------------------------------------------------
+    )
 
     groups = []
 
-    total = 0
-    success = 0
-    failed = 0
+    total_stocks = 0
+    success_count = 0
+    failed_count = 0
 
-    for g in watchlist.get("groups", []):
+    # --------------------------------------------------------
+    # 更新所有板塊
+    # --------------------------------------------------------
 
-        group_name = g.get(
+    for group in watchlist.get("groups", []):
+
+        group_name = group.get(
             "name",
-            "未分類"
+            "未命名板塊"
         )
 
         print()
-        print(f"📂 {group_name}")
+        print("-" * 60)
+        print(f"Updating group: {group_name}")
+        print("-" * 60)
 
         stocks = []
 
-        for stock in g.get("stocks", []):
+        for stock in group.get("stocks", []):
 
-            total += 1
+            total_stocks += 1
+
+            code = str(stock.get("code", ""))
+            name = stock.get("name", code)
 
             print(
-                f"  🔎 {stock['code']} "
-                f"{stock['name']}"
+                f"Updating {code} {name}..."
             )
 
-            result = summarize(stock)
+            try:
 
-            if result["status"] == "ok":
-                success += 1
-            else:
-                failed += 1
+                result = summarize(stock)
 
-            stocks.append(result)
+                stocks.append(result)
+
+                success_count += 1
+
+                print(
+                    f"  OK: "
+                    f"{result['market']} "
+                    f"close={result['close']} "
+                    f"week={result['week_return']}%"
+                )
+
+            except Exception as exc:
+
+                failed_count += 1
+
+                print(
+                    f"  FAILED: {code} {name}"
+                )
+                print(
+                    f"  Error: {exc}"
+                )
+
+                # 即使這支股票失敗，
+                # 仍然把它寫入 JSON，
+                # 避免整個板塊消失。
+                stocks.append({
+                    **stock,
+
+                    "market": None,
+                    "open": None,
+                    "close": None,
+                    "week_return": None,
+                    "latest_date": None,
+
+                    "status": "error",
+                    "error": str(exc),
+                })
 
             # 避免連續大量請求
-            time.sleep(0.2)
+            time.sleep(0.3)
 
         groups.append({
             "name": group_name,
-            "stocks": stocks
+            "stocks": stocks,
         })
 
     # --------------------------------------------------------
-    # 輸出
+    # 產生輸出資料
     # --------------------------------------------------------
 
-    output = {
-        "generated_at": datetime.now().isoformat(),
-        "total_stocks": total,
-        "success": success,
-        "failed": failed,
-        "groups": groups
+    now = datetime.now().isoformat()
+
+    output_data = {
+        "groups": groups,
+
+        # 前端 app.js 使用
+        "as_of": now,
+
+        # 保留原本欄位
+        "generated_at": now,
+
+        "total_stocks": total_stocks,
+        "success": success_count,
+        "failed": failed_count,
     }
+
+    OUTPUT.parent.mkdir(
+        parents=True,
+        exist_ok=True
+    )
 
     OUTPUT.write_text(
         json.dumps(
-            output,
+            output_data,
             ensure_ascii=False,
             indent=2
         ),
@@ -446,30 +574,25 @@ def main():
     )
 
     # --------------------------------------------------------
-    # 結果
+    # Summary
     # --------------------------------------------------------
 
     print()
     print("=" * 60)
-    print("✅ 市場資料更新完成")
+    print("Update completed")
     print("=" * 60)
 
-    print(f"股票總數 : {total}")
-    print(f"成功     : {success}")
-    print(f"失敗     : {failed}")
+    print(f"Total:   {total_stocks}")
+    print(f"Success: {success_count}")
+    print(f"Failed:  {failed_count}")
+    print(f"Output:  {OUTPUT}")
+    print(f"As of:   {now}")
+    print("=" * 60)
 
-    print()
-    print(f"輸出檔案:")
-    print(OUTPUT)
-
-    if failed > 0:
-
-        print()
-        print(
-            "⚠️ 有部分股票無法取得資料，"
-            "但 market_data.json 已正常產生。"
-        )
-
+    # 非零失敗不讓 GitHub Actions 整個掛掉
+    #
+    # 因為即使少數股票失敗，
+    # 其他股票仍然應該正常更新。
     return 0
 
 
