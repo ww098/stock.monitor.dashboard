@@ -1,162 +1,786 @@
 document.addEventListener('DOMContentLoaded', () => {
     let marketData = null;
 
-    // 1. 切換「管理觀察名單」面板顯示與隱藏
+    // ============================================================
+    // 1. 管理觀察名單面板
+    // ============================================================
+
     const toggleBtn = document.getElementById('toggle-panel');
     const mgmtPanel = document.getElementById('management-panel');
+
     if (toggleBtn && mgmtPanel) {
         toggleBtn.addEventListener('click', () => {
-            mgmtPanel.style.display = mgmtPanel.style.display === 'none' ? 'block' : 'none';
+            const isHidden =
+                mgmtPanel.style.display === 'none' ||
+                getComputedStyle(mgmtPanel).display === 'none';
+
+            mgmtPanel.style.display = isHidden ? 'block' : 'none';
         });
     }
 
-    // 2. 重新載入按鈕
+
+    // ============================================================
+    // 2. 重新載入
+    // ============================================================
+
     const reloadBtn = document.getElementById('reload');
+
     if (reloadBtn) {
-        reloadBtn.addEventListener('click', () => loadData());
+        reloadBtn.addEventListener('click', () => {
+            loadData();
+        });
     }
 
-    // 3. 載入市場資料
+
+    // ============================================================
+    // 3. 初始載入
+    // ============================================================
+
     loadData();
 
+
+    // ============================================================
+    // 4. 載入 market_data.json
+    // ============================================================
+
     function loadData() {
-        fetch('data/market_data.json?t=' + Date.now())
-            .then(res => res.json())
-            .then(data => {
-                marketData = data;
-                
-                // 更新時間
-                const asOfEl = document.getElementById('as-of');
-                if (asOfEl) {
-                    asOfEl.innerText = data.as_of ? `資料更新時間：${data.as_of}` : '資料已載入';
+
+        const asOfEl = document.getElementById('as-of');
+
+        if (asOfEl) {
+            asOfEl.innerText = '正在載入市場資料…';
+        }
+
+        fetch('data/market_data.json?t=' + Date.now(), {
+            cache: 'no-store'
+        })
+            .then(res => {
+
+                if (!res.ok) {
+                    throw new Error(
+                        `HTTP ${res.status}`
+                    );
                 }
+
+                return res.json();
+            })
+
+            .then(data => {
+
+                marketData = data;
+
+                console.log('市場資料載入成功:', data);
+
+                // ------------------------------------------------
+                // 相容不同版本的 Python 輸出格式
+                // ------------------------------------------------
+
+                const updateTime =
+                    data.as_of ||
+                    data.generated_at ||
+                    null;
+
+                if (asOfEl) {
+
+                    if (updateTime) {
+
+                        const date = new Date(updateTime);
+
+                        if (!isNaN(date.getTime())) {
+
+                            asOfEl.innerText =
+                                `資料更新時間：${date.toLocaleString('zh-TW')}`;
+
+                        } else {
+
+                            asOfEl.innerText =
+                                `資料更新時間：${updateTime}`;
+                        }
+
+                    } else {
+
+                        asOfEl.innerText =
+                            '資料已載入';
+                    }
+                }
+
+
+                // ------------------------------------------------
+                // 檢查 groups
+                // ------------------------------------------------
+
+                if (!Array.isArray(data.groups)) {
+
+                    throw new Error(
+                        'market_data.json 缺少 groups'
+                    );
+                }
+
 
                 renderSummary(data);
                 renderRanking(data);
+
             })
+
             .catch(err => {
-                console.error('載入資料發生錯誤:', err);
-                const asOfEl = document.getElementById('as-of');
-                if (asOfEl) asOfEl.innerText = '載入資料失敗或尚無資料';
+
+                console.error(
+                    '載入資料發生錯誤:',
+                    err
+                );
+
+                if (asOfEl) {
+
+                    asOfEl.innerText =
+                        '載入資料失敗或尚無資料';
+                }
+
+                const ranking =
+                    document.getElementById('ranking');
+
+                if (ranking) {
+
+                    ranking.innerHTML = `
+                        <p style="
+                            color:var(--muted);
+                            padding:10px;
+                        ">
+                            無法載入市場資料。
+                            <br>
+                            請確認 market_data.json 是否存在。
+                        </p>
+                    `;
+                }
             });
     }
 
-    // 4. 渲染本週摘要卡片 (本週最強、最弱、監測板塊數量)
-    function renderSummary(data) {
-        if (!data.groups || data.groups.length === 0) return;
 
-        document.getElementById('coverage').innerText = `${data.groups.length} 個`;
+    // ============================================================
+    // 5. 取得有效股票
+    // ============================================================
 
-        const groupsWithAvg = data.groups.map(g => {
-            const avg = g.stocks.length > 0 
-                ? g.stocks.reduce((acc, s) => acc + (s.week_return || 0), 0) / g.stocks.length 
-                : 0;
-            return { name: g.name, avg };
+    function getValidStocks(group) {
+
+        if (!group || !Array.isArray(group.stocks)) {
+            return [];
+        }
+
+        return group.stocks.filter(stock => {
+
+            return (
+                stock &&
+                typeof stock.week_return === 'number' &&
+                Number.isFinite(stock.week_return)
+            );
         });
-
-        groupsWithAvg.sort((a, b) => b.avg - a.avg);
-        const strongest = groupsWithAvg[0];
-        const weakest = groupsWithAvg[groupsWithAvg.length - 1];
-
-        const strongestEl = document.getElementById('strongest');
-        const weakestEl = document.getElementById('weakest');
-
-        if (strongestEl) strongestEl.innerText = `${strongest.name} (${strongest.avg > 0 ? '+' : ''}${strongest.avg.toFixed(2)}%)`;
-        if (weakestEl) weakestEl.innerText = `${weakest.name} (${weakest.avg > 0 ? '+' : ''}${weakest.avg.toFixed(2)}%)`;
     }
 
-    // 5. 渲染板塊列表
-    function renderRanking(data) {
-        const container = document.getElementById('ranking');
-        container.innerHTML = '';
 
-        if (!data.groups || data.groups.length === 0) {
-            container.innerHTML = '<p style="color:var(--muted); padding:10px;">目前尚無監測資料，請執行爬蟲程式。</p>';
+    // ============================================================
+    // 6. 計算板塊平均漲跌
+    // ============================================================
+
+    function getGroupAverage(group) {
+
+        const stocks = getValidStocks(group);
+
+        if (stocks.length === 0) {
+            return null;
+        }
+
+        const total = stocks.reduce(
+            (sum, stock) =>
+                sum + stock.week_return,
+            0
+        );
+
+        return total / stocks.length;
+    }
+
+
+    // ============================================================
+    // 7. 格式化百分比
+    // ============================================================
+
+    function formatPercent(value) {
+
+        if (
+            value === null ||
+            value === undefined ||
+            !Number.isFinite(value)
+        ) {
+            return '—';
+        }
+
+        return (
+            (value > 0 ? '+' : '') +
+            value.toFixed(2) +
+            '%'
+        );
+    }
+
+
+    // ============================================================
+    // 8. 渲染本週摘要
+    // ============================================================
+
+    function renderSummary(data) {
+
+        const groups = Array.isArray(data.groups)
+            ? data.groups
+            : [];
+
+        if (groups.length === 0) {
+
             return;
         }
 
-        data.groups.forEach((group, idx) => {
-            const avgReturn = group.stocks.length > 0
-                ? group.stocks.reduce((acc, s) => acc + (s.week_return || 0), 0) / group.stocks.length
-                : 0;
-            const formattedReturn = (avgReturn > 0 ? '+' : '') + avgReturn.toFixed(2) + '%';
-            const isPositive = avgReturn >= 0;
 
-            const btn = document.createElement('button');
+        // --------------------------------------------------------
+        // 板塊數量
+        // --------------------------------------------------------
+
+        const coverage =
+            document.getElementById('coverage');
+
+        if (coverage) {
+
+            coverage.innerText =
+                `${groups.length} 個`;
+        }
+
+
+        // --------------------------------------------------------
+        // 計算各板塊平均
+        // --------------------------------------------------------
+
+        const groupsWithAvg = groups
+            .map(group => {
+
+                return {
+                    name: group.name,
+                    avg: getGroupAverage(group)
+                };
+
+            })
+            .filter(group => group.avg !== null);
+
+
+        // 沒有任何有效資料
+        if (groupsWithAvg.length === 0) {
+
+            const strongest =
+                document.getElementById('strongest');
+
+            const weakest =
+                document.getElementById('weakest');
+
+            if (strongest) {
+                strongest.innerText = '—';
+            }
+
+            if (weakest) {
+                weakest.innerText = '—';
+            }
+
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // 排序
+        // --------------------------------------------------------
+
+        groupsWithAvg.sort(
+            (a, b) => b.avg - a.avg
+        );
+
+
+        const strongest =
+            groupsWithAvg[0];
+
+        const weakest =
+            groupsWithAvg[
+                groupsWithAvg.length - 1
+            ];
+
+
+        // --------------------------------------------------------
+        // 最強
+        // --------------------------------------------------------
+
+        const strongestEl =
+            document.getElementById('strongest');
+
+        if (strongestEl) {
+
+            strongestEl.innerText =
+                `${strongest.name} (${formatPercent(strongest.avg)})`;
+        }
+
+
+        // --------------------------------------------------------
+        // 最弱
+        // --------------------------------------------------------
+
+        const weakestEl =
+            document.getElementById('weakest');
+
+        if (weakestEl) {
+
+            weakestEl.innerText =
+                `${weakest.name} (${formatPercent(weakest.avg)})`;
+        }
+    }
+
+
+    // ============================================================
+    // 9. 渲染板塊排行
+    // ============================================================
+
+    function renderRanking(data) {
+
+        const container =
+            document.getElementById('ranking');
+
+        if (!container) {
+            return;
+        }
+
+        container.innerHTML = '';
+
+
+        const groups =
+            Array.isArray(data.groups)
+                ? data.groups
+                : [];
+
+
+        if (groups.length === 0) {
+
+            container.innerHTML = `
+                <p style="
+                    color:var(--muted);
+                    padding:10px;
+                ">
+                    目前尚無監測資料。
+                </p>
+            `;
+
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // 計算平均值並排序
+        // --------------------------------------------------------
+
+        const rankedGroups = groups
+            .map(group => {
+
+                return {
+                    group,
+                    avg: getGroupAverage(group)
+                };
+
+            })
+            .sort((a, b) => {
+
+                if (a.avg === null) return 1;
+                if (b.avg === null) return -1;
+
+                return b.avg - a.avg;
+            });
+
+
+        // --------------------------------------------------------
+        // 生成排行
+        // --------------------------------------------------------
+
+        rankedGroups.forEach((item, idx) => {
+
+            const group = item.group;
+            const avgReturn = item.avg;
+
+            const hasData =
+                avgReturn !== null;
+
+            const isPositive =
+                hasData && avgReturn >= 0;
+
+            const formattedReturn =
+                hasData
+                    ? formatPercent(avgReturn)
+                    : '—';
+
+
+            const btn =
+                document.createElement('button');
+
             btn.type = 'button';
             btn.className = 'rank-row';
-            btn.setAttribute('aria-pressed', idx === 0 ? 'true' : 'false');
+
+            btn.setAttribute(
+                'aria-pressed',
+                idx === 0
+                    ? 'true'
+                    : 'false'
+            );
+
+
+            // ----------------------------------------------------
+            // 柱狀圖寬度
+            // ----------------------------------------------------
+
+            const barWidth =
+                hasData
+                    ? Math.min(
+                        Math.abs(avgReturn) * 10,
+                        100
+                    )
+                    : 0;
+
 
             btn.innerHTML = `
                 <span>${group.name}</span>
+
                 <div class="bar-track">
-                    <div class="bar ${isPositive ? 'positive' : 'negative'}" style="width: ${Math.min(Math.abs(avgReturn) * 10, 100)}%;"></div>
+                    <div
+                        class="bar ${
+                            isPositive
+                                ? 'positive'
+                                : 'negative'
+                        }"
+                        style="
+                            width:${barWidth}%;
+                        "
+                    ></div>
                 </div>
-                <span class="return ${isPositive ? 'up' : 'down'}">${formattedReturn}</span>
+
+                <span class="return ${
+                    hasData
+                        ? (
+                            isPositive
+                                ? 'up'
+                                : 'down'
+                        )
+                        : ''
+                }">
+                    ${formattedReturn}
+                </span>
             `;
 
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.rank-row').forEach(b => b.setAttribute('aria-pressed', 'false'));
-                btn.setAttribute('aria-pressed', 'true');
-                renderDetails(group);
-            });
+
+            // ----------------------------------------------------
+            // 點擊
+            // ----------------------------------------------------
+
+            btn.addEventListener(
+                'click',
+                () => {
+
+                    document
+                        .querySelectorAll('.rank-row')
+                        .forEach(b => {
+
+                            b.setAttribute(
+                                'aria-pressed',
+                                'false'
+                            );
+                        });
+
+
+                    btn.setAttribute(
+                        'aria-pressed',
+                        'true'
+                    );
+
+
+                    renderDetails(group);
+                }
+            );
+
 
             container.appendChild(btn);
         });
 
-        // 預設展開第一個板塊的詳細內容
-        renderDetails(data.groups[0]);
+
+        // --------------------------------------------------------
+        // 預設顯示第一個
+        // --------------------------------------------------------
+
+        renderDetails(
+            rankedGroups[0].group
+        );
     }
 
-    // 6. 渲染選定板塊的成分股與柱狀圖
+
+    // ============================================================
+    // 10. 渲染板塊詳細資料
+    // ============================================================
+
     function renderDetails(group) {
-        document.getElementById('selected-title').innerText = group.name;
 
-        const avgReturn = group.stocks.length > 0
-            ? group.stocks.reduce((acc, s) => acc + (s.week_return || 0), 0) / group.stocks.length
-            : 0;
-
-        const returnEl = document.getElementById('selected-return');
-        if (returnEl) {
-            returnEl.innerText = (avgReturn > 0 ? '+' : '') + avgReturn.toFixed(2) + '%';
-            returnEl.style.color = avgReturn >= 0 ? 'var(--red)' : 'var(--green)';
+        if (!group) {
+            return;
         }
 
-        // 渲染個股比較柱狀圖
-        const trendContainer = document.getElementById('trend');
-        trendContainer.innerHTML = '';
-        
-        group.stocks.forEach(s => {
-            const col = document.createElement('div');
-            col.className = 'trend-column';
-            const isPos = s.week_return >= 0;
-            const barHeight = Math.max(Math.min(Math.abs(s.week_return) * 12, 180), 8);
 
-            col.innerHTML = `
-                <div class="trend-bar ${isPos ? 'positive' : 'negative'}" style="height: ${barHeight}px;"></div>
-                <span>${s.name}</span>
-            `;
-            trendContainer.appendChild(col);
-        });
+        // --------------------------------------------------------
+        // 標題
+        // --------------------------------------------------------
 
-        // 渲染成分股清單
-        const holdingsContainer = document.getElementById('holdings');
+        const title =
+            document.getElementById(
+                'selected-title'
+            );
+
+        if (title) {
+
+            title.innerText =
+                group.name || '未分類';
+        }
+
+
+        // --------------------------------------------------------
+        // 平均漲跌
+        // --------------------------------------------------------
+
+        const avgReturn =
+            getGroupAverage(group);
+
+
+        const returnEl =
+            document.getElementById(
+                'selected-return'
+            );
+
+
+        if (returnEl) {
+
+            returnEl.innerText =
+                formatPercent(avgReturn);
+
+
+            if (avgReturn === null) {
+
+                returnEl.style.color =
+                    'var(--muted)';
+
+            } else {
+
+                returnEl.style.color =
+                    avgReturn >= 0
+                        ? 'var(--red)'
+                        : 'var(--green)';
+            }
+        }
+
+
+        // --------------------------------------------------------
+        // 股票資料
+        // --------------------------------------------------------
+
+        const stocks =
+            Array.isArray(group.stocks)
+                ? group.stocks
+                : [];
+
+
+        // ========================================================
+        // 個股比較柱狀圖
+        // ========================================================
+
+        const trendContainer =
+            document.getElementById('trend');
+
+
+        if (trendContainer) {
+
+            trendContainer.innerHTML = '';
+
+
+            stocks.forEach(stock => {
+
+                const hasData =
+                    typeof stock.week_return === 'number' &&
+                    Number.isFinite(
+                        stock.week_return
+                    );
+
+
+                const value =
+                    hasData
+                        ? stock.week_return
+                        : 0;
+
+
+                const isPos =
+                    hasData && value >= 0;
+
+
+                const barHeight =
+                    hasData
+                        ? Math.max(
+                            Math.min(
+                                Math.abs(value) * 12,
+                                180
+                            ),
+                            8
+                        )
+                        : 8;
+
+
+                const col =
+                    document.createElement('div');
+
+                col.className =
+                    'trend-column';
+
+
+                col.innerHTML = `
+                    <div
+                        class="trend-bar ${
+                            hasData
+                                ? (
+                                    isPos
+                                        ? 'positive'
+                                        : 'negative'
+                                )
+                                : ''
+                        }"
+                        style="
+                            height:${barHeight}px;
+                            opacity:${
+                                hasData
+                                    ? '1'
+                                    : '0.25'
+                            };
+                        "
+                    ></div>
+
+                    <span>
+                        ${stock.name || stock.code}
+                    </span>
+                `;
+
+
+                trendContainer.appendChild(col);
+            });
+        }
+
+
+        // ========================================================
+        // 成分股清單
+        // ========================================================
+
+        const holdingsContainer =
+            document.getElementById(
+                'holdings'
+            );
+
+
+        if (!holdingsContainer) {
+            return;
+        }
+
+
         holdingsContainer.innerHTML = '';
 
-        group.stocks.forEach(stock => {
-            const isPositive = stock.week_return >= 0;
-            const div = document.createElement('div');
-            div.className = 'holding';
-            div.innerHTML = `
-                <div>
-                    <div>${stock.name}</div>
-                    <small>${stock.code}</small>
-                </div>
-                <div class="return" style="color: ${isPositive ? 'var(--red)' : 'var(--green)'};">
-                    ${isPositive ? '+' : ''}${stock.week_return}%
-                </div>
-            `;
+
+        stocks.forEach(stock => {
+
+            const hasData =
+                typeof stock.week_return === 'number' &&
+                Number.isFinite(
+                    stock.week_return
+                );
+
+
+            const isPositive =
+                hasData &&
+                stock.week_return >= 0;
+
+
+            const div =
+                document.createElement('div');
+
+            div.className =
+                'holding';
+
+
+            // ----------------------------------------------------
+            // 正常資料
+            // ----------------------------------------------------
+
+            if (hasData) {
+
+                div.innerHTML = `
+                    <div>
+                        <div>
+                            ${stock.name || stock.code}
+                        </div>
+
+                        <small>
+                            ${stock.code}
+                            ${
+                                stock.market
+                                    ? ` · ${stock.market}`
+                                    : ''
+                            }
+                        </small>
+                    </div>
+
+                    <div
+                        class="return"
+                        style="
+                            color:${
+                                isPositive
+                                    ? 'var(--red)'
+                                    : 'var(--green)'
+                            };
+                        "
+                    >
+                        ${formatPercent(
+                            stock.week_return
+                        )}
+                    </div>
+                `;
+
+            }
+
+            // ----------------------------------------------------
+            // 資料失敗
+            // ----------------------------------------------------
+
+            else {
+
+                div.innerHTML = `
+                    <div>
+                        <div>
+                            ${stock.name || stock.code}
+                        </div>
+
+                        <small>
+                            ${stock.code}
+                            · 資料暫缺
+                        </small>
+                    </div>
+
+                    <div
+                        class="return"
+                        style="
+                            color:var(--muted);
+                        "
+                    >
+                        —
+                    </div>
+                `;
+            }
+
+
             holdingsContainer.appendChild(div);
         });
     }
+
 });
