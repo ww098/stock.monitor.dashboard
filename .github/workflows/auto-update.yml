@@ -1,34 +1,67 @@
-name: Auto Update TWSE Market Data
+name: Auto Update Taiwan Market Data
 
 on:
   schedule:
-    # 每個工作日 (週一至週五) 台北時間下午 3:30 (UTC 7:30) 執行
+    # 每個工作日台灣時間 15:30
+    # GitHub Actions 使用 UTC，所以是 07:30 UTC
     - cron: '30 7 * * 1-5'
-  workflow_dispatch: # 允許在 GitHub 網站上手動按鈕觸發
-  
+
+  # 可以在 GitHub Actions 手動執行
+  workflow_dispatch:
+
 permissions:
   contents: write
 
 jobs:
   update-data:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
-      - name: Run Crawler Script
+      - name: Run Market Data Updater
         run: |
-          python3 scripts/update_market_data.py
+          python scripts/update_market_data.py
+
+      - name: Check generated data
+        run: |
+          echo "Checking market_data.json..."
+          python - <<'PY'
+          import json
+
+          with open("data/market_data.json", "r", encoding="utf-8") as f:
+              data = json.load(f)
+
+          print("Groups:", len(data.get("groups", [])))
+          print("Generated:", data.get("generated_at"))
+          print("As of:", data.get("as_of"))
+
+          total = sum(
+              len(group.get("stocks", []))
+              for group in data.get("groups", [])
+          )
+
+          print("Total stocks:", total)
+          PY
 
       - name: Commit and Push Changes
         run: |
           git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
           git add data/market_data.json
-          git diff-index --quiet HEAD || git commit -m "Auto-update market data (TWSE)"
-          git push
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Auto-update market data"
+            git push
+          fi
